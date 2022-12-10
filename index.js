@@ -39,12 +39,8 @@ async function run() {
     try {
         const addressCollection = client.db('vouch-digital').collection('addressBook');
 
-        app.post('/addressBook', verifyJWT, async (req, res) => {
+        app.post('/addressBook', async (req, res) => {
             const address = req.body;
-            const decodedEmail = req.decoded.email;
-            if (email !== decodedEmail) {
-                return res.status(403).send({ message: 'forbidden access' });
-            }
             const result = await addressCollection.insertOne(address);
             res.send(result);
         })
