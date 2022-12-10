@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
@@ -38,8 +39,12 @@ async function run() {
     try {
         const addressCollection = client.db('vouch-digital').collection('addressBook');
 
-        app.post('/addressBook', async (req, res) => {
+        app.post('/addressBook', verifyJWT, async (req, res) => {
             const address = req.body;
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
             const result = await addressCollection.insertOne(address);
             res.send(result);
         })
@@ -84,6 +89,18 @@ async function run() {
             }
             const result = await addressCollection.updateOne(filter, updatedContact, option);
             res.send(result);
+        })
+
+        app.get('/jwt', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const user = await addressCollection.findOne(query);
+            if (user) {
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
+                return res.send({ accessToken: token });
+            }
+            console.log(user);
+            res.status(403).send({ accessToken: '' });
         })
 
     } finally {
